@@ -1,8 +1,5 @@
 - 👋 Hi, I’m @LegendFFJaivanth2012
-  I am an ethical hacker
-  I study at GGN INTERNATIONAL SCHOOL
-  I am a student
-  I live in Chennai
+  I like Strawberry 
   
 <!---
 LegendFFJaivanth2012/LegendFFJaivanth2012 is a ✨ special ✨ repository because its `README.md` (this file) appears on your GitHub profile.
