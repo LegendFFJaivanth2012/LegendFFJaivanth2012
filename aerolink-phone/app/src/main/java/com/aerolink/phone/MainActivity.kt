@@ -2,8 +2,10 @@ package com.aerolink.phone
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.os.SystemClock
 import android.provider.OpenableColumns
 import android.widget.Button
 import android.widget.TextView
@@ -23,12 +25,17 @@ import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import java.io.DataOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
 import java.util.UUID
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import kotlin.math.hypot
 
 class MainActivity : AppCompatActivity() {
@@ -39,27 +46,46 @@ class MainActivity : AppCompatActivity() {
     private lateinit var telemetry: TextView
     private lateinit var selectFile: Button
     private lateinit var discover: Button
+    private lateinit var cancel: Button
 
+    private val cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private var role = ""
     private var selectedUri: Uri? = null
     private var landmarker: HandLandmarker? = null
-    private var armed = false
-    private var sent = false
+    private var cameraProvider: ProcessCameraProvider? = null
     private var pinchSince = 0L
-    private var receiverTriggered = false
+    private var openPalmSince = 0L
+    private var armed = false
+    private var sending = false
+    private var receiverPolling = false
+    private var pendingFileName = "aerolink-received.bin"
 
     private val picker = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         selectedUri = uri
         if (uri != null) {
-            instruction.text = "Hold a pinch for 0.45 s"
-            telemetry.text = "Selected: " + displayName(uri)
+            armed = false
+            sending = false
+            instruction.text = "Hold thumb + index finger together"
+            telemetry.text = "Selected: ${displayName(uri)} · release your hand to send"
             startCamera()
         }
     }
 
-    private val cameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
-        if (ok) startCamera() else telemetry.text = "Camera permission is required for gesture detection."
-    }
+    private val cameraPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) startCamera()
+            else telemetry.text = "Camera permission is needed for gesture detection."
+        }
+
+    private val saveFile =
+        registerForActivityResult(ActivityResultContracts.CreateDocument("*/*")) { target ->
+            if (target == null) {
+                status.text = "FILE NOT SAVED"
+                instruction.text = "You can receive again or retry."
+                return@registerForActivityResult
+            }
+            lifecycleScope.launch { downloadReceivedFile(target) }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,68 +98,122 @@ class MainActivity : AppCompatActivity() {
         telemetry = findViewById(R.id.telemetry)
         selectFile = findViewById(R.id.selectFile)
         discover = findViewById(R.id.discover)
+        cancel = findViewById(R.id.cancel)
 
-        findViewById<Button>(R.id.senderMode).setOnClickListener {
-            role = "sender"
-            selectFile.visibility = Button.VISIBLE
-            discover.visibility = Button.GONE
-            mode.text = "SENDER MODE"
-            instruction.text = "Select a file, then pinch."
-            telemetry.text = "Phone → ESP32-TX → wired bridge → ESP32-RX → phone"
-        }
-
-        findViewById<Button>(R.id.receiverMode).setOnClickListener {
-            role = "receiver"
-            selectFile.visibility = Button.GONE
-            discover.visibility = Button.VISIBLE
-            mode.text = "RECEIVER MODE"
-            instruction.text = "Turn on discoverable mode."
-            telemetry.text = "Receiver ESP32: http://192.168.4.1"
-        }
-
+        findViewById<Button>(R.id.senderMode).setOnClickListener { chooseSender() }
+        findViewById<Button>(R.id.receiverMode).setOnClickListener { chooseReceiver() }
         selectFile.setOnClickListener { picker.launch("*/*") }
-        discover.setOnClickListener {
-            instruction.text = "Show your open hand to accept."
-            status.text = "DISCOVERABLE"
-            startCamera()
-        }
+        discover.setOnClickListener { enableDiscoverable() }
+        cancel.setOnClickListener { resetWorkflow() }
+    }
+
+    private fun chooseSender() {
+        role = "sender"
+        receiverPolling = false
+        armed = false
+        sending = false
+        selectFile.visibility = Button.VISIBLE
+        discover.visibility = Button.GONE
+        cancel.visibility = Button.VISIBLE
+        mode.text = "SENDER · JOIN AEROLINK-TX"
+        instruction.text = "Choose a file to begin."
+        telemetry.text = "Phone A connects to ESP32-A Wi-Fi: AEROLINK-TX · password: aerolink123"
+        status.text = "READY"
+        stopCamera()
+    }
+
+    private fun chooseReceiver() {
+        role = "receiver"
+        receiverPolling = false
+        selectFile.visibility = Button.GONE
+        discover.visibility = Button.VISIBLE
+        cancel.visibility = Button.VISIBLE
+        mode.text = "RECEIVER · JOIN AEROLINK-RX"
+        instruction.text = "Turn on discoverable mode."
+        telemetry.text = "Phone B connects to ESP32-B Wi-Fi: AEROLINK-RX · password: aerolink123"
+        status.text = "READY"
+        stopCamera()
+    }
+
+    private fun enableDiscoverable() {
+        if (role != "receiver") return
+        receiverPolling = false
+        openPalmSince = 0L
+        instruction.text = "Show an open palm and hold it to catch."
+        telemetry.text = "Discoverable · waiting for the catch gesture"
+        status.text = "DISCOVERABLE"
+        startCamera()
+    }
+
+    private fun resetWorkflow() {
+        receiverPolling = false
+        armed = false
+        sending = false
+        pinchSince = 0L
+        openPalmSince = 0L
+        stopCamera()
+        role = ""
+        selectedUri = null
+        selectFile.visibility = Button.GONE
+        discover.visibility = Button.GONE
+        cancel.visibility = Button.GONE
+        mode.text = "TWO ESP32 NODES · TWO PHONES"
+        instruction.text = "Choose how this phone will take part."
+        telemetry.text = "Connect to this phone's AEROLINK ESP32 Wi-Fi network."
+        status.text = "READY"
     }
 
     private fun startCamera() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+            != PackageManager.PERMISSION_GRANTED) {
             cameraPermission.launch(Manifest.permission.CAMERA)
             return
         }
-
         setupLandmarker()
-
         val future = ProcessCameraProvider.getInstance(this)
         future.addListener({
             val provider = future.get()
-            val previewUseCase = Preview.Builder().build().also { it.setSurfaceProvider(preview.surfaceProvider) }
+            cameraProvider = provider
+            val previewUseCase = Preview.Builder().build().also {
+                it.setSurfaceProvider(preview.surfaceProvider)
+            }
             val analysis = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
 
-            analysis.setAnalyzer(ContextCompat.getMainExecutor(this)) { image ->
+            analysis.setAnalyzer(cameraExecutor) { image ->
                 try {
-                    val bitmap = image.toBitmap()
-                    landmarker?.detectAsync(BitmapImageBuilder(bitmap).build(), System.currentTimeMillis())
+                    val bitmap: Bitmap = image.toBitmap()
+                    val mpImage = BitmapImageBuilder(bitmap).build()
+                    landmarker?.detectAsync(mpImage, SystemClock.uptimeMillis())
                 } catch (_: Exception) {
+                    // A dropped frame should not stop the live camera pipeline.
                 } finally {
                     image.close()
                 }
             }
 
             provider.unbindAll()
-            provider.bindToLifecycle(this, CameraSelector.DEFAULT_FRONT_CAMERA, previewUseCase, analysis)
-            status.text = "CAMERA ACTIVE"
+            provider.bindToLifecycle(
+                this,
+                CameraSelector.DEFAULT_FRONT_CAMERA,
+                previewUseCase,
+                analysis
+            )
+            runOnUiThread { status.text = "CAMERA ACTIVE" }
         }, ContextCompat.getMainExecutor(this))
+    }
+
+    private fun stopCamera() {
+        cameraProvider?.unbindAll()
+        cameraProvider = null
     }
 
     private fun setupLandmarker() {
         if (landmarker != null) return
-        val base = BaseOptions.builder().setModelAssetPath("hand_landmarker.task").build()
+        val base = BaseOptions.builder()
+            .setModelAssetPath("hand_landmarker.task")
+            .build()
         val options = HandLandmarker.HandLandmarkerOptions.builder()
             .setBaseOptions(base)
             .setRunningMode(RunningMode.LIVE_STREAM)
@@ -141,149 +221,243 @@ class MainActivity : AppCompatActivity() {
             .setMinHandDetectionConfidence(0.55f)
             .setMinTrackingConfidence(0.55f)
             .setMinHandPresenceConfidence(0.55f)
-            .setResultListener { result, _ -> onHand(result) }
+            .setResultListener { result, _ -> onHandLandmarks(result) }
             .build()
         landmarker = HandLandmarker.createFromOptions(this, options)
     }
 
-    private fun onHand(result: HandLandmarkerResult) {
-        val hand = result.landmarks().firstOrNull() ?: run {
-            if (role == "sender") pinchSince = 0L
+    private fun onHandLandmarks(result: HandLandmarkerResult) {
+        val hand = result.landmarks().firstOrNull()
+        if (hand == null) {
+            pinchSince = 0L
+            openPalmSince = 0L
             return
         }
 
-        val wrist = hand[0]
-        val thumb = hand[4]
-        val index = hand[8]
-        val middle = hand[12]
-        val ring = hand[16]
-        val pinky = hand[20]
+        fun distance(a: Int, b: Int): Float =
+            hypot(hand[a].x() - hand[b].x(), hand[a].y() - hand[b].y())
 
-        val palm = hypot(wrist.x() - middle.x(), wrist.y() - middle.y()).coerceAtLeast(0.08f)
-        val pinchDistance = hypot(thumb.x() - index.x(), thumb.y() - index.y()) / palm
-        val pinch = pinchDistance < 0.42f
+        val palmScale = distance(0, 9).coerceAtLeast(0.04f)
+        val pinching = distance(4, 8) / palmScale < 0.38f
 
-        val openScore =
-            hypot(wrist.x() - index.x(), wrist.y() - index.y()) +
-            hypot(wrist.x() - middle.x(), wrist.y() - middle.y()) +
-            hypot(wrist.x() - ring.x(), wrist.y() - ring.y()) +
-            hypot(wrist.x() - pinky.x(), wrist.y() - pinky.y())
-        val openHand = openScore / 4f > 0.32f
+        // Count fingers whose tips are farther from the wrist than their PIP joints.
+        val extendedPairs = listOf(8 to 6, 12 to 10, 16 to 14, 20 to 18)
+        val extendedFingers = extendedPairs.count { (tip, pip) ->
+            distance(0, tip) > distance(0, pip) * 1.12f
+        }
+        val openPalm = extendedFingers >= 3
 
-        if (role == "sender") {
-            if (pinch && !armed) {
-                if (pinchSince == 0L) pinchSince = System.currentTimeMillis()
-                if (System.currentTimeMillis() - pinchSince > 450L) {
+        if (role == "sender" && selectedUri != null && !sending) {
+            if (pinching) {
+                openPalmSince = 0L
+                if (pinchSince == 0L) pinchSince = SystemClock.uptimeMillis()
+                if (!armed && SystemClock.uptimeMillis() - pinchSince >= 450L) {
                     armed = true
                     runOnUiThread {
-                        status.text = "ARMED"
-                        instruction.text = "Move into position · release to send"
-                        telemetry.text = "Pinch lock acquired"
+                        status.text = "PINCH LOCKED"
+                        instruction.text = "Now open your hand to release the file."
+                        telemetry.text = "Gesture detected · waiting for release"
                     }
                 }
-            } else if (!pinch) {
+            } else {
                 pinchSince = 0L
-                if (armed && !sent) {
-                    sent = true
+                if (armed && openPalm) {
+                    sending = true
                     runOnUiThread {
                         status.text = "SENDING"
-                        instruction.text = "Transfer in progress…"
+                        instruction.text = "Your file is travelling through the ESP32 bridge…"
                     }
-                    lifecycleScope.launch { uploadSelectedFile() }
+                    lifecycleScope.launch { sendSelectedFile() }
                 }
             }
-        } else if (openHand && !receiverTriggered) {
-            receiverTriggered = true
-            runOnUiThread {
-                status.text = "ACCEPTING"
-                instruction.text = "Checking receiver ESP32…"
+        } else if (role == "receiver" && !receiverPolling) {
+            if (openPalm) {
+                if (openPalmSince == 0L) openPalmSince = SystemClock.uptimeMillis()
+                if (SystemClock.uptimeMillis() - openPalmSince >= 650L) {
+                    receiverPolling = true
+                    runOnUiThread {
+                        status.text = "CATCH GESTURE"
+                        instruction.text = "Checking for a received file…"
+                        telemetry.text = "Gesture accepted · asking ESP32-RX for transfer status"
+                    }
+                    lifecycleScope.launch { waitForIncomingFile() }
+                }
+            } else {
+                openPalmSince = 0L
             }
-            lifecycleScope.launch { pollReceiver() }
         }
     }
 
-    private suspend fun uploadSelectedFile() {
+    private suspend fun sendSelectedFile() {
         val uri = selectedUri ?: return
         try {
             withContext(Dispatchers.IO) {
-                val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: error("Could not read file")
-                val id = UUID.randomUUID().toString().replace("-", "").take(12)
-                val chunkSize = 4096
-                val total = (bytes.size + chunkSize - 1) / chunkSize
-
-                for (seq in 0 until total) {
-                    val start = seq * chunkSize
-                    val end = minOf(bytes.size, start + chunkSize)
-                    postChunk(id, seq, total, displayName(uri), bytes.copyOfRange(start, end))
-                }
-                withContext(Dispatchers.Main) {
-                    status.text = "SENT"
-                    instruction.text = "File delivered to receiver ESP32"
-                    telemetry.text = bytes.size.toString() + " bytes · " + total + " packets"
-                }
+                val name = displayName(uri)
+                val size = fileSize(uri)
+                if (size < 0L) error("This file provider did not report its file size.")
+                val chunkSize = 1024
+                val total = maxOf(1, ((size + chunkSize - 1) / chunkSize).toInt())
+                val transferId = UUID.randomUUID().toString().replace("-", "").take(16)
+                contentResolver.openInputStream(uri)?.use { input ->
+                    for (seq in 0 until total) {
+                        val wanted = minOf(chunkSize.toLong(), size - seq.toLong() * chunkSize).toInt().coerceAtLeast(0)
+                        val chunk = ByteArray(wanted)
+                        var offset = 0
+                        while (offset < wanted) {
+                            val n = input.read(chunk, offset, wanted - offset)
+                            if (n < 0) error("The file ended before all bytes were read.")
+                            offset += n
+                        }
+                        postChunk(transferId, seq, total, name, chunk)
+                        withContext(Dispatchers.Main) {
+                            val pct = ((seq + 1) * 100 / total)
+                            status.text = "SENDING · $pct%"
+                            telemetry.text = "$name · packet ${seq + 1} of $total"
+                        }
+                    }
+                } ?: error("Could not open the selected file.")
+            }
+            withContext(Dispatchers.Main) {
+                status.text = "SENT"
+                instruction.text = "Transfer reached the receiver ESP32."
+                telemetry.text = "File sent successfully · receiver can catch and save it."
             }
         } catch (e: Exception) {
-            sent = false
             withContext(Dispatchers.Main) {
-                status.text = "ERROR"
-                instruction.text = "Transfer failed"
-                telemetry.text = e.message ?: "ESP32 connection failed"
+                sending = false
+                armed = false
+                status.text = "TRANSFER ERROR"
+                instruction.text = "Could not send the selected file."
+                telemetry.text = e.message ?: "Check that Phone A is connected to AEROLINK-TX."
             }
         }
     }
 
     private fun postChunk(id: String, seq: Int, total: Int, name: String, payload: ByteArray) {
-        val c = URL("http://192.168.4.1/api/chunk").openConnection() as HttpURLConnection
+        val query = "id=${enc(id)}&seq=$seq&total=$total&name=${enc(name)}"
+        val url = URL("http://192.168.4.1/api/chunk?$query")
+        val boundary = "AeroLink" + UUID.randomUUID().toString().replace("-", "")
+        val prefix = "--$boundary\r\n" +
+            "Content-Disposition: form-data; name=\"chunk\"; filename=\"part.bin\"\r\n" +
+            "Content-Type: application/octet-stream\r\n\r\n"
+        val suffix = "\r\n--$boundary--\r\n"
+        val c = url.openConnection() as HttpURLConnection
         c.requestMethod = "POST"
         c.doOutput = true
-        c.connectTimeout = 4000
-        c.readTimeout = 4000
-        c.setRequestProperty("Content-Type", "application/octet-stream")
-        c.setRequestProperty("X-Aero-Transfer", id)
-        c.setRequestProperty("X-Aero-Seq", seq.toString())
-        c.setRequestProperty("X-Aero-Total", total.toString())
-        c.setRequestProperty("X-Aero-Name", name)
-        DataOutputStream(c.outputStream).use { it.write(payload) }
-        if (c.responseCode !in 200..299) error("ESP32 rejected packet " + seq)
+        c.connectTimeout = 5000
+        c.readTimeout = 10000
+        c.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+        c.setFixedLengthStreamingMode(prefix.toByteArray().size + payload.size + suffix.toByteArray().size)
+        DataOutputStream(c.outputStream).use { out ->
+            out.write(prefix.toByteArray())
+            out.write(payload)
+            out.write(suffix.toByteArray())
+        }
+        val response = c.responseCode
         c.disconnect()
+        if (response !in 200..299) error("ESP32 returned HTTP $response for packet $seq.")
     }
 
-    private suspend fun pollReceiver() {
+    private suspend fun waitForIncomingFile() {
         withContext(Dispatchers.IO) {
             try {
-                val c = URL("http://192.168.4.1/api/status").openConnection() as HttpURLConnection
-                c.connectTimeout = 1500
-                c.readTimeout = 1500
-                val body = c.inputStream.bufferedReader().readText()
-                c.disconnect()
-                withContext(Dispatchers.Main) {
-                    status.text = "RECEIVER ONLINE"
-                    instruction.text = "Transfer is ready"
-                    telemetry.text = body
+                repeat(180) {
+                    val c = URL("http://192.168.4.1/api/status").openConnection() as HttpURLConnection
+                    c.connectTimeout = 2500
+                    c.readTimeout = 2500
+                    val body = c.inputStream.bufferedReader().use { it.readText() }
+                    c.disconnect()
+                    val json = JSONObject(body)
+                    val packets = json.optInt("packets", 0)
+                    val total = json.optInt("total", 0)
+                    val complete = json.optBoolean("complete", false)
+                    val name = json.optString("name", "aerolink-received.bin")
+                    withContext(Dispatchers.Main) {
+                        telemetry.text = "Receiver ESP32 · $packets / $total packets"
+                    }
+                    if (complete && total > 0) {
+                        pendingFileName = name
+                        withContext(Dispatchers.Main) {
+                            status.text = "FILE READY"
+                            instruction.text = "Received $name. Save it to this phone."
+                            telemetry.text = "Complete file detected · choose where to save."
+                            saveFile.launch(pendingFileName)
+                        }
+                        return@withContext
+                    }
+                    delay(900)
                 }
-            } catch (e: Exception) {
-                receiverTriggered = false
                 withContext(Dispatchers.Main) {
                     status.text = "WAITING"
-                    instruction.text = "Keep your hand open to retry"
-                    telemetry.text = "ESP32-RX not reachable"
+                    instruction.text = "No complete file arrived yet."
+                    telemetry.text = "Keep discoverable mode on and try again."
+                    receiverPolling = false
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    status.text = "ESP32 NOT REACHABLE"
+                    instruction.text = "Check the AEROLINK-RX Wi-Fi connection."
+                    telemetry.text = e.message ?: "Could not read receiver status."
+                    receiverPolling = false
                 }
             }
         }
     }
 
-    private fun displayName(uri: Uri): String {
-        var name = "payload.bin"
-        contentResolver.query(uri, null, null, null, null)?.use { c ->
-            val i = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            if (i >= 0 && c.moveToFirst()) name = c.getString(i)
+    private suspend fun downloadReceivedFile(target: Uri) {
+        withContext(Dispatchers.IO) {
+            try {
+                val c = URL("http://192.168.4.1/api/file").openConnection() as HttpURLConnection
+                c.connectTimeout = 5000
+                c.readTimeout = 15000
+                if (c.responseCode !in 200..299) error("ESP32 could not provide the received file.")
+                contentResolver.openOutputStream(target)?.use { output ->
+                    c.inputStream.use { input -> input.copyTo(output) }
+                } ?: error("Could not open the destination on this phone.")
+                c.disconnect()
+                withContext(Dispatchers.Main) {
+                    status.text = "SAVED"
+                    instruction.text = "Your file is saved on this phone."
+                    telemetry.text = pendingFileName
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    status.text = "SAVE FAILED"
+                    instruction.text = "Try downloading the file again."
+                    telemetry.text = e.message ?: "Unknown save error."
+                }
+            }
         }
-        return name
     }
 
+    private fun fileSize(uri: Uri): Long {
+        contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val index = cursor.getColumnIndex(OpenableColumns.SIZE)
+                if (index >= 0 && !cursor.isNull(index)) return cursor.getLong(index)
+            }
+        }
+        return contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length } ?: -1L
+    }
+
+    private fun displayName(uri: Uri): String {
+        var name = "aerolink-file.bin"
+        contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (index >= 0) name = cursor.getString(index) ?: name
+            }
+        }
+        return name.replace("/", "_").replace("\\", "_")
+    }
+
+    private fun enc(value: String): String = URLEncoder.encode(value, "UTF-8")
+
     override fun onDestroy() {
+        stopCamera()
         landmarker?.close()
         landmarker = null
+        cameraExecutor.shutdown()
         super.onDestroy()
     }
 }
