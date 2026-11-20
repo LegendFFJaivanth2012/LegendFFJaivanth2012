@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources><style name="Theme.AeroLink" parent="Theme.AppCompat.DayNight.NoActionBar">
+<item name="android:fontFamily">sans</item><item name="android:statusBarColor">#06101C</item>
+<item name="android:navigationBarColor">#030812</item><item name="android:colorAccent">#69E7FF</item>
+</style></resources>
