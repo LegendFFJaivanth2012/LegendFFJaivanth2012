@@ -14,13 +14,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
-import androidx.camera.core.toBitmap
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.tasks.core.BaseOptions
+import com.google.mediapipe.tasks.vision.core.ImageProcessingOptions
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
@@ -189,7 +189,10 @@ class MainActivity : AppCompatActivity() {
                 try {
                     val bitmap: Bitmap = image.toBitmap()
                     val mpImage = BitmapImageBuilder(bitmap).build()
-                    landmarker?.detectAsync(mpImage, SystemClock.uptimeMillis())
+                    val imageOptions = ImageProcessingOptions.builder()
+                        .setRotationDegrees(image.imageInfo.rotationDegrees)
+                        .build()
+                    landmarker?.detectAsync(mpImage, imageOptions, SystemClock.uptimeMillis())
                 } catch (_: Exception) {
                     // A dropped frame should not stop the live camera pipeline.
                 } finally {
