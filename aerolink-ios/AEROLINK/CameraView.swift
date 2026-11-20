@@ -4,10 +4,11 @@ import Vision
 
 struct CameraView: UIViewRepresentable {
     @Binding var gestureState: GestureState
+    let mode: AERole
     let enabled: Bool
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(gestureState: $gestureState)
+        Coordinator(gestureState: $gestureState, mode: mode)
     }
 
     func makeUIView(context: Context) -> UIView {
@@ -18,30 +19,29 @@ struct CameraView: UIViewRepresentable {
 
     func updateUIView(_ uiView: UIView, context: Context) {
         context.coordinator.enabled = enabled
+        context.coordinator.mode = mode
     }
 
     final class Coordinator: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
         @Binding var gestureState: GestureState
+        var mode: AERole
         var enabled = true
 
         private let session = AVCaptureSession()
         private let queue = DispatchQueue(label: "aerolink.camera.frames")
         private let visionQueue = DispatchQueue(label: "aerolink.vision")
         private let handRequest = VNDetectHumanHandPoseRequest()
-        private var previewView: PreviewView?
-
         private var pinchFrames = 0
         private var movementFrames = 0
-        private var lastPinchPoint: CGPoint?
         private var pinchOrigin: CGPoint?
         private var releaseCooldown = 0
 
-        init(gestureState: Binding<GestureState>) {
+        init(gestureState: Binding<GestureState>, mode: AERole) {
             _gestureState = gestureState
+            self.mode = mode
         }
 
         func setup(view: PreviewView) {
-            previewView = view
             guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else {
                 AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
                     if granted { DispatchQueue.main.async { self?.start(view: view) } }
@@ -73,22 +73,21 @@ struct CameraView: UIViewRepresentable {
                     session.commitConfiguration()
                     return
                 }
+
                 session.addOutput(output)
                 output.connection(with: .video)?.videoOrientation = .portrait
-
                 session.commitConfiguration()
+
                 DispatchQueue.main.async {
                     view.videoPreviewLayer.session = self.session
                     view.videoPreviewLayer.videoGravity = .resizeAspectFill
                 }
-                self.session.startRunning()
+                session.startRunning()
             }
         }
 
         func stop() {
-            queue.async { [weak self] in
-                self?.session.stopRunning()
-            }
+            queue.async { [weak self] in self?.session.stopRunning() }
         }
 
         func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
@@ -98,6 +97,7 @@ struct CameraView: UIViewRepresentable {
             }
 
             let handler = VNImageRequestHandler(cmSampleBuffer: sampleBuffer, orientation: .leftMirrored, options: [:])
+
             do {
                 try handler.perform([handRequest])
                 guard let observation = handRequest.results?.first else {
@@ -113,9 +113,8 @@ struct CameraView: UIViewRepresentable {
                     return
                 }
 
-                let pinchDistance = distance(thumb, index)
                 let palmScale = max(distance(wrist, points[.middleMCP]?.location ?? wrist), 0.05)
-                let pinch = pinchDistance / palmScale < 0.45
+                let pinch = distance(thumb, index) / palmScale < 0.45
 
                 let openFingers = [
                     points[.indexTip]?.location,
@@ -127,11 +126,17 @@ struct CameraView: UIViewRepresentable {
                 }.count
 
                 let openPalm = openFingers >= 3
+                let handCenter = CGPoint(x: (thumb.x + index.x) / 2, y: (thumb.y + index.y) / 2)
 
-                let handCenter = CGPoint(
-                    x: (thumb.x + index.x) / 2,
-                    y: (thumb.y + index.y) / 2
-                )
+                if mode == .receiver {
+                    if openPalm {
+                        gestureState = .released
+                        releaseCooldown = 18
+                    } else {
+                        gestureState = .idle
+                    }
+                    return
+                }
 
                 if pinch {
                     pinchFrames += 1
@@ -139,24 +144,26 @@ struct CameraView: UIViewRepresentable {
                         pinchOrigin = pinchOrigin ?? handCenter
                         gestureState = .pinchLocked
                     }
-                } else if pinchOrigin != nil && openPalm {
-                    if let origin = pinchOrigin {
-                        let movement = distance(origin, handCenter)
-                        if movement > 0.16 {
-                            movementFrames += 1
-                        }
+                    return
+                }
+
+                if pinchOrigin != nil {
+                    if let origin = pinchOrigin, distance(origin, handCenter) > 0.16 {
+                        movementFrames += 1
+                        gestureState = .moving
                     }
 
-                    if movementFrames >= 2 {
+                    if openPalm && movementFrames >= 2 {
                         gestureState = .released
                         releaseCooldown = 18
                         pinchFrames = 0
                         movementFrames = 0
                         pinchOrigin = nil
+                        return
                     }
-                } else {
-                    resetTransientGesture()
                 }
+
+                resetTransientGesture()
             } catch {
                 resetTransientGesture()
             }
