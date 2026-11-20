@@ -71,6 +71,7 @@ class MainActivity : AppCompatActivity() {
     private var armed = false
     private var sending = false
     private var receiverPolling = false
+    @Volatile private var sensitivityLevel = 65
     private var pendingFileName = "aerolink-received.bin"
 
     @Volatile private var trainingStage = TrainingStage.NONE
@@ -155,6 +156,7 @@ class MainActivity : AppCompatActivity() {
         loadGestureProfile()
         val savedSensitivity = profilePrefs.getInt("sensitivity", 65).coerceIn(0, 100)
         sensitivity.progress = savedSensitivity
+        sensitivityLevel = savedSensitivity
         updateSensitivityLabel(savedSensitivity)
 
         findViewById<Button>(R.id.senderMode).setOnClickListener { chooseSender() }
@@ -166,6 +168,7 @@ class MainActivity : AppCompatActivity() {
 
         sensitivity.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                sensitivityLevel = progress
                 updateSensitivityLabel(progress)
             }
 
@@ -181,6 +184,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun chooseSender() {
+        trainingStage = TrainingStage.NONE
+        trainingSamples.clear()
         role = "sender"
         receiverPolling = false
         armed = false
@@ -196,6 +201,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun chooseReceiver() {
+        trainingStage = TrainingStage.NONE
+        trainingSamples.clear()
         role = "receiver"
         receiverPolling = false
         selectFile.visibility = Button.GONE
@@ -385,16 +392,20 @@ class MainActivity : AppCompatActivity() {
             angleDegrees(hand[17], hand[18], hand[20])
         )
         val palmScore = fingerAngles.average().toFloat()
-        val sensitivityValue = sensitivity.progress
+        val sensitivityValue = sensitivityLevel
         val sensitivityOffset = (sensitivityValue - 50) / 50f
         val pinchThreshold = (trainedPinchThreshold() + sensitivityOffset * 0.075f)
             .coerceIn(0.22f, 0.68f)
         val openAngleThreshold = (trainedPalmThreshold() - sensitivityOffset * 8.0f)
             .coerceIn(125f, 168f)
         val extendedPairs = listOf(8 to 6, 12 to 10, 16 to 14, 20 to 18)
-        val extendedFingers = extendedPairs.count { (tip, pip) ->
-            val angle = fingerAngles[extendedPairs.indexOf(tip to pip)]
-            angle >= openAngleThreshold && distance(0, tip) > distance(0, pip) * 1.015f
+        val extendedFingers = extendedPairs.withIndex().count { (index, pair) ->
+            val (tip, pip) = pair
+            fingerAngles[index] >= openAngleThreshold && distance(0, tip) > distance(0, pip) * 1.015f
+        }
+        val trainingExtendedFingers = extendedPairs.withIndex().count { (index, pair) ->
+            val (tip, pip) = pair
+            fingerAngles[index] >= 112f && distance(0, tip) > distance(0, pip) * 0.99f
         }
         val openPalm = extendedFingers >= 3
         val movementThreshold = 0.13f - (sensitivityValue / 100f) * 0.075f
@@ -402,7 +413,7 @@ class MainActivity : AppCompatActivity() {
         val palmHoldMs = (800L - sensitivityValue * 3L).coerceAtLeast(420L)
 
         if (trainingStage != TrainingStage.NONE) {
-            collectTrainingSample(pinchMetric, palmScore, extendedFingers, now)
+            collectTrainingSample(pinchMetric, palmScore, trainingExtendedFingers, now)
             return
         }
 
@@ -475,7 +486,7 @@ class MainActivity : AppCompatActivity() {
         when (trainingStage) {
             TrainingStage.PINCH -> {
                 // Only keep frames that look like a real thumb-index pinch.
-                if (pinchMetric < 0.82f) trainingSamples.add(pinchMetric)
+                if (pinchMetric < 0.70f) trainingSamples.add(pinchMetric)
                 if (trainingSamples.size >= 24) {
                     trainingSamples.forEach { pinchStats.add(it) }
                     saveGestureProfile()
