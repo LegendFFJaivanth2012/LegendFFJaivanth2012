@@ -99,12 +99,15 @@ void handleFrame(const FrameHeader& header, uint8_t* payload) {
 // Scan for the two-byte frame marker, then read a complete frame and validate CRC16.
 void processUart() {
   while (LINK.available() >= 2) {
-    const int first = LINK.read();
-    if (first != 0xE1) continue;
-    const int second = LINK.read();
-    if (second != 0xA7) {
+    // Consume only a confirmed sync marker. If the second byte is another
+    // 0xE1, leave it queued so it can begin the next sync-marker check.
+    if (LINK.peek() != 0xE1) {
+      LINK.read();
       continue;
     }
+    LINK.read();
+    if (LINK.peek() != 0xA7) continue;
+    LINK.read();
 
     FrameHeader header{};
     header.magic = 0xA7E1;
