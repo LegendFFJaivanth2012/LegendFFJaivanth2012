@@ -1,16 +1,159 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#06101C">
-<androidx.camera.view.PreviewView android:id="@+id/preview" android:layout_width="match_parent" android:layout_height="match_parent"/>
-<View android:layout_width="match_parent" android:layout_height="match_parent" android:background="#33000000"/>
-<LinearLayout android:orientation="vertical" android:padding="24dp" android:layout_width="match_parent" android:layout_height="match_parent">
-<LinearLayout android:orientation="horizontal" android:gravity="center_vertical" android:layout_width="match_parent" android:layout_height="wrap_content">
-<TextView android:text="AEROLINK" android:textColor="#EAF4FF" android:textStyle="bold" android:textSize="16sp" android:letterSpacing="0.18" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
-<TextView android:id="@+id/status" android:text="READY" android:textColor="#61E6A4" android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.12" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-</LinearLayout>
-<Space android:layout_width="1dp" android:layout_height="0dp" android:layout_weight="1"/>
-<LinearLayout android:orientation="vertical" android:background="#D906101C" android:padding="20dp" android:layout_width="match_parent" android:layout_height="wrap_content">
-<TextView android:id="@+id/mode" android:text="SENDER MODE" android:textColor="#69E7FF" android:textStyle="bold" android:textSize="10sp" android:letterSpacing="0.16" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-<TextView android:id="@+id/instruction" android:text="Select a file, then pinch to arm." android:textColor="#EAF4FF" android:textSize="21sp" android:textStyle="bold" android:layout_marginTop="8dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-<TextView android:id="@+id/telemetry" android:text="Camera is active · hand tracking starts after permission" android:textColor="#8CA3B8" android:textSize="11sp" android:layout_marginTop="8dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-<Button android:id="@+id/selectFile" android:text="SELECT FILE" android:textAllCaps="false" android:textColor="#03101B" android:backgroundTint="#69E7FF" android:layout_marginTop="16dp" android:layout_width="match_parent" android:layout_height="52dp"/>
-</LinearLayout></LinearLayout></FrameLayout>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#06101C">
+
+    <androidx.camera.view.PreviewView
+        android:id="@+id/preview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#44030A13" />
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="22dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:text="AEROLINK"
+                android:textColor="#EAF4FF"
+                android:textStyle="bold"
+                android:textSize="17sp"
+                android:letterSpacing="0.18"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:id="@+id/status"
+                android:text="READY"
+                android:textColor="#61E6A4"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.12"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <Space
+            android:layout_width="1dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:background="#E906101C"
+            android:padding="20dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/mode"
+                android:text="TWO ESP32 NODES · TWO PHONES"
+                android:textColor="#69E7FF"
+                android:textStyle="bold"
+                android:textSize="10sp"
+                android:letterSpacing="0.14"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:id="@+id/instruction"
+                android:text="Choose how this phone will take part."
+                android:textColor="#EAF4FF"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:layout_marginTop="9dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:id="@+id/telemetry"
+                android:text="Connect this phone to its AEROLINK ESP32 Wi-Fi network."
+                android:textColor="#9BB0C3"
+                android:textSize="12sp"
+                android:lineSpacingExtra="3dp"
+                android:layout_marginTop="8dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_marginTop="18dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <Button
+                    android:id="@+id/senderMode"
+                    android:text="SEND"
+                    android:textAllCaps="false"
+                    android:textStyle="bold"
+                    android:textColor="#03101B"
+                    android:backgroundTint="#69E7FF"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="52dp" />
+
+                <Button
+                    android:id="@+id/receiverMode"
+                    android:text="RECEIVE"
+                    android:textAllCaps="false"
+                    android:textStyle="bold"
+                    android:textColor="#EAF4FF"
+                    android:backgroundTint="#29425A"
+                    android:layout_marginStart="10dp"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="52dp" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/selectFile"
+                android:text="CHOOSE FILE"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                android:textColor="#03101B"
+                android:backgroundTint="#69E7FF"
+                android:visibility="gone"
+                android:layout_marginTop="10dp"
+                android:layout_width="match_parent"
+                android:layout_height="52dp" />
+
+            <Button
+                android:id="@+id/discover"
+                android:text="TURN ON DISCOVERABLE MODE"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                android:textColor="#EAF4FF"
+                android:backgroundTint="#29425A"
+                android:visibility="gone"
+                android:layout_marginTop="10dp"
+                android:layout_width="match_parent"
+                android:layout_height="52dp" />
+
+            <Button
+                android:id="@+id/cancel"
+                android:text="RESET"
+                android:textAllCaps="false"
+                android:textColor="#A9BED0"
+                android:backgroundTint="#142638"
+                android:visibility="gone"
+                android:layout_marginTop="6dp"
+                android:layout_width="match_parent"
+                android:layout_height="44dp" />
+
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>
