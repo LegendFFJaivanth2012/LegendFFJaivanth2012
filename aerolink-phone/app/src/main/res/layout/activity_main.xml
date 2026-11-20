@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#06101C">
+<androidx.camera.view.PreviewView android:id="@+id/preview" android:layout_width="match_parent" android:layout_height="match_parent"/>
+<View android:layout_width="match_parent" android:layout_height="match_parent" android:background="#33000000"/>
+<LinearLayout android:orientation="vertical" android:padding="24dp" android:layout_width="match_parent" android:layout_height="match_parent">
+<LinearLayout android:orientation="horizontal" android:gravity="center_vertical" android:layout_width="match_parent" android:layout_height="wrap_content">
+<TextView android:text="AEROLINK" android:textColor="#EAF4FF" android:textStyle="bold" android:textSize="16sp" android:letterSpacing="0.18" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+<TextView android:id="@+id/status" android:text="READY" android:textColor="#61E6A4" android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.12" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+</LinearLayout>
+<Space android:layout_width="1dp" android:layout_height="0dp" android:layout_weight="1"/>
+<LinearLayout android:orientation="vertical" android:background="#D906101C" android:padding="20dp" android:layout_width="match_parent" android:layout_height="wrap_content">
+<TextView android:id="@+id/mode" android:text="SENDER MODE" android:textColor="#69E7FF" android:textStyle="bold" android:textSize="10sp" android:letterSpacing="0.16" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+<TextView android:id="@+id/instruction" android:text="Select a file, then pinch to arm." android:textColor="#EAF4FF" android:textSize="21sp" android:textStyle="bold" android:layout_marginTop="8dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<TextView android:id="@+id/telemetry" android:text="Camera is active · hand tracking starts after permission" android:textColor="#8CA3B8" android:textSize="11sp" android:layout_marginTop="8dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<Button android:id="@+id/selectFile" android:text="SELECT FILE" android:textAllCaps="false" android:textColor="#03101B" android:backgroundTint="#69E7FF" android:layout_marginTop="16dp" android:layout_width="match_parent" android:layout_height="52dp"/>
+</LinearLayout></LinearLayout></FrameLayout>
