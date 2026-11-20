@@ -1,0 +1,30 @@
+name: Compile AEROLINK ESP32 firmware
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "aerolink-esp32/**"
+      - ".github/workflows/aerolink-esp32.yml"
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Arduino CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
+          echo "$PWD/bin" >> "$GITHUB_PATH"
+      - name: Install Espressif ESP32 core
+        run: |
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32
+      - name: Compile sender sketch
+        run: |
+          arduino-cli compile --warnings all --fqbn esp32:esp32:esp32s3 --build-path "$RUNNER_TEMP/aerolink-sender-build" aerolink-esp32/AEROLINK_Sender
+      - name: Compile receiver sketch
+        run: |
+          arduino-cli compile --warnings all --fqbn esp32:esp32:esp32s3 --build-path "$RUNNER_TEMP/aerolink-receiver-build" aerolink-esp32/AEROLINK_Receiver
