@@ -54,6 +54,9 @@ class MainActivity : AppCompatActivity() {
     private var landmarker: HandLandmarker? = null
     private var cameraProvider: ProcessCameraProvider? = null
     private var pinchSince = 0L
+    private var pinchOriginX = 0f
+    private var pinchOriginY = 0f
+    private var handMoved = false
     private var openPalmSince = 0L
     private var armed = false
     private var sending = false
@@ -65,7 +68,7 @@ class MainActivity : AppCompatActivity() {
         if (uri != null) {
             armed = false
             sending = false
-            instruction.text = "Hold thumb + index finger together"
+            instruction.text = "Pinch · move toward receiver · open your hand"
             telemetry.text = "Selected: ${displayName(uri)} · release your hand to send"
             startCamera()
         }
@@ -150,6 +153,7 @@ class MainActivity : AppCompatActivity() {
         armed = false
         sending = false
         pinchSince = 0L
+        handMoved = false
         openPalmSince = 0L
         stopCamera()
         role = ""
@@ -250,24 +254,36 @@ class MainActivity : AppCompatActivity() {
         if (role == "sender" && selectedUri != null && !sending) {
             if (pinching) {
                 openPalmSince = 0L
-                if (pinchSince == 0L) pinchSince = SystemClock.uptimeMillis()
+                if (pinchSince == 0L) {
+                    pinchSince = SystemClock.uptimeMillis()
+                    pinchOriginX = hand[0].x()
+                    pinchOriginY = hand[0].y()
+                    handMoved = false
+                }
                 if (!armed && SystemClock.uptimeMillis() - pinchSince >= 450L) {
                     armed = true
                     runOnUiThread {
                         status.text = "PINCH LOCKED"
-                        instruction.text = "Now open your hand to release the file."
+                        instruction.text = "Move toward the receiver, then open your hand."
                         telemetry.text = "Gesture detected · waiting for release"
                     }
                 }
+                if (armed && hypot(hand[0].x() - pinchOriginX, hand[0].y() - pinchOriginY) > 0.10f) {
+                    handMoved = true
+                }
             } else {
                 pinchSince = 0L
-                if (armed && openPalm) {
+                if (armed && openPalm && handMoved) {
                     sending = true
                     runOnUiThread {
                         status.text = "SENDING"
                         instruction.text = "Your file is travelling through the ESP32 bridge…"
                     }
                     lifecycleScope.launch { sendSelectedFile() }
+                } else if (armed && openPalm && !handMoved) {
+                    runOnUiThread {
+                        instruction.text = "Move your pinched hand toward the receiver first."
+                    }
                 }
             }
         } else if (role == "receiver" && !receiverPolling) {
@@ -326,6 +342,7 @@ class MainActivity : AppCompatActivity() {
             withContext(Dispatchers.Main) {
                 sending = false
                 armed = false
+                handMoved = false
                 status.text = "TRANSFER ERROR"
                 instruction.text = "Could not send the selected file."
                 telemetry.text = e.message ?: "Check that Phone A is connected to AEROLINK-TX."
