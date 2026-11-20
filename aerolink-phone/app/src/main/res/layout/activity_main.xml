@@ -16,7 +16,7 @@
 
     <LinearLayout
         android:orientation="vertical"
-        android:padding="22dp"
+        android:padding="18dp"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -52,108 +52,148 @@
             android:layout_height="0dp"
             android:layout_weight="1" />
 
-        <LinearLayout
-            android:orientation="vertical"
-            android:background="#E906101C"
-            android:padding="20dp"
+        <ScrollView
+            android:fillViewport="false"
+            android:overScrollMode="never"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <TextView
-                android:id="@+id/mode"
-                android:text="TWO ESP32 NODES · TWO PHONES"
-                android:textColor="#69E7FF"
-                android:textStyle="bold"
-                android:textSize="10sp"
-                android:letterSpacing="0.14"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-
-            <TextView
-                android:id="@+id/instruction"
-                android:text="Choose how this phone will take part."
-                android:textColor="#EAF4FF"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:layout_marginTop="9dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-
-            <TextView
-                android:id="@+id/telemetry"
-                android:text="Connect this phone to its AEROLINK ESP32 Wi-Fi network."
-                android:textColor="#9BB0C3"
-                android:textSize="12sp"
-                android:lineSpacingExtra="3dp"
-                android:layout_marginTop="8dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-
             <LinearLayout
-                android:orientation="horizontal"
-                android:layout_marginTop="18dp"
+                android:orientation="vertical"
+                android:background="#E906101C"
+                android:padding="18dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
+                <TextView
+                    android:id="@+id/mode"
+                    android:text="TWO ESP32 NODES · TWO PHONES"
+                    android:textColor="#69E7FF"
+                    android:textStyle="bold"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.14"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    android:id="@+id/instruction"
+                    android:text="Choose a mode, or train your hand profile first."
+                    android:textColor="#EAF4FF"
+                    android:textSize="21sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="9dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    android:id="@+id/telemetry"
+                    android:text="Connect this phone to its AEROLINK ESP32 Wi-Fi network."
+                    android:textColor="#9BB0C3"
+                    android:textSize="12sp"
+                    android:lineSpacingExtra="3dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_marginTop="16dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <Button
+                        android:id="@+id/senderMode"
+                        android:text="SEND"
+                        android:textAllCaps="false"
+                        android:textStyle="bold"
+                        android:textColor="#03101B"
+                        android:backgroundTint="#69E7FF"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="50dp" />
+
+                    <Button
+                        android:id="@+id/receiverMode"
+                        android:text="RECEIVE"
+                        android:textAllCaps="false"
+                        android:textStyle="bold"
+                        android:textColor="#EAF4FF"
+                        android:backgroundTint="#29425A"
+                        android:layout_marginStart="10dp"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="50dp" />
+                </LinearLayout>
+
                 <Button
-                    android:id="@+id/senderMode"
-                    android:text="SEND"
+                    android:id="@+id/trainGestures"
+                    android:text="TRAIN MY GESTURES"
+                    android:textAllCaps="false"
+                    android:textStyle="bold"
+                    android:textColor="#03101B"
+                    android:backgroundTint="#8CF0C0"
+                    android:layout_marginTop="10dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp" />
+
+                <TextView
+                    android:id="@+id/sensitivityLabel"
+                    android:text="GESTURE SENSITIVITY · HIGH · 65%"
+                    android:textColor="#B9D0E2"
+                    android:textStyle="bold"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.05"
+                    android:layout_marginTop="12dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <SeekBar
+                    android:id="@+id/sensitivity"
+                    android:max="100"
+                    android:progress="65"
+                    android:progressTint="#69E7FF"
+                    android:thumbTint="#EAF4FF"
+                    android:progressBackgroundTint="#29425A"
+                    android:layout_marginTop="2dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <Button
+                    android:id="@+id/selectFile"
+                    android:text="CHOOSE FILE"
                     android:textAllCaps="false"
                     android:textStyle="bold"
                     android:textColor="#03101B"
                     android:backgroundTint="#69E7FF"
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="52dp" />
+                    android:visibility="gone"
+                    android:layout_marginTop="8dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp" />
 
                 <Button
-                    android:id="@+id/receiverMode"
-                    android:text="RECEIVE"
+                    android:id="@+id/discover"
+                    android:text="TURN ON DISCOVERABLE MODE"
                     android:textAllCaps="false"
                     android:textStyle="bold"
                     android:textColor="#EAF4FF"
                     android:backgroundTint="#29425A"
-                    android:layout_marginStart="10dp"
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="52dp" />
+                    android:visibility="gone"
+                    android:layout_marginTop="8dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp" />
+
+                <Button
+                    android:id="@+id/cancel"
+                    android:text="RESET"
+                    android:textAllCaps="false"
+                    android:textColor="#A9BED0"
+                    android:backgroundTint="#142638"
+                    android:visibility="gone"
+                    android:layout_marginTop="6dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="42dp" />
+
             </LinearLayout>
-
-            <Button
-                android:id="@+id/selectFile"
-                android:text="CHOOSE FILE"
-                android:textAllCaps="false"
-                android:textStyle="bold"
-                android:textColor="#03101B"
-                android:backgroundTint="#69E7FF"
-                android:visibility="gone"
-                android:layout_marginTop="10dp"
-                android:layout_width="match_parent"
-                android:layout_height="52dp" />
-
-            <Button
-                android:id="@+id/discover"
-                android:text="TURN ON DISCOVERABLE MODE"
-                android:textAllCaps="false"
-                android:textStyle="bold"
-                android:textColor="#EAF4FF"
-                android:backgroundTint="#29425A"
-                android:visibility="gone"
-                android:layout_marginTop="10dp"
-                android:layout_width="match_parent"
-                android:layout_height="52dp" />
-
-            <Button
-                android:id="@+id/cancel"
-                android:text="RESET"
-                android:textAllCaps="false"
-                android:textColor="#A9BED0"
-                android:backgroundTint="#142638"
-                android:visibility="gone"
-                android:layout_marginTop="6dp"
-                android:layout_width="match_parent"
-                android:layout_height="44dp" />
-
-        </LinearLayout>
+        </ScrollView>
     </LinearLayout>
 </FrameLayout>
