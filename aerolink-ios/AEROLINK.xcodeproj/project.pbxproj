@@ -1,194 +1,41 @@
 // !$*UTF8*$!
 {
-	archiveVersion = 1;
-	classes = {
-	};
-	objectVersion = 56;
-	objects = {
-
-		111111111111111111111111 /* Project object */ = {
-			isa = PBXProject;
-			attributes = {
-				LastUpgradeCheck = 1600;
-				TargetAttributes = {
-					222222222222222222222222 = {
-						CreatedOnToolsVersion = 16.0;
-					};
-				};
-			};
-			buildConfigurationList = 333333333333333333333333 /* Build configuration list for PBXProject */;
-			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = en;
-			hasScannedForEncodings = 0;
-			knownRegions = (
-				en,
-				Base,
-			);
-			mainGroup = 444444444444444444444444 /* Main group */;
-			productRefGroup = 555555555555555555555555 /* Products */;
-			projectDirPath = "";
-			projectRoot = "";
-			targets = (
-				222222222222222222222222 /* AEROLINK */,
-			);
-		};
-
-		222222222222222222222222 /* AEROLINK target */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 666666666666666666666666 /* Target build configuration list */;
-			buildPhases = (
-				777777777777777777777777 /* Sources */,
-				888888888888888888888888 /* Frameworks */,
-				999999999999999999999999 /* Resources */,
-			);
-			dependencies = (
-			);
-			name = AEROLINK;
-			productName = AEROLINK;
-			productReference = AAAAAAAAAAAAAAAAAAAAAAAA /* AEROLINK.app */;
-			productType = "com.apple.product-type.application";
-		};
-
-		444444444444444444444444 /* Main group */ = {
-			isa = PBXGroup;
-			children = (
-				BBBBBBBBBBBBBBBBBBBBBBBB /* AEROLINK group */,
-				CCCCCCCCCCCCCCCCCCCCCCCC /* Products */,
-			);
-			sourceTree = "<group>";
-		};
-
-		BBBBBBBBBBBBBBBBBBBBBBBB /* AEROLINK group */ = {
-			isa = PBXGroup;
-			children = (
-				DDDDDDDDDDDDDDDDDDDDDDDD /* AEROLINKApp.swift */,
-				EEEEEEEEEEEEEEEEEEEEEEEE /* ContentView.swift */,
-				FFFFFFFFFFFFFFFFFFFFFFFF /* AppConstants.swift */,
-				121212121212121212121212 /* Models.swift */,
-				131313131313131313131313 /* ESP32Client.swift */,
-				141414141414141414141414 /* FileImporter.swift */,
-				151515151515151515151515 /* FileExporter.swift */,
-				161616161616161616161616 /* CameraView.swift */,
-				171717171717171717171717 /* Info.plist */,
-			);
-			path = AEROLINK;
-			sourceTree = "<group>";
-		};
-
-		CCCCCCCCCCCCCCCCCCCCCCCC /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				AAAAAAAAAAAAAAAAAAAAAAAA /* AEROLINK.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-
-		DDDDDDDDDDDDDDDDDDDDDDDD /* AEROLINKApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AEROLINKApp.swift; sourceTree = "<group>";};
-		EEEEEEEEEEEEEEEEEEEEEEEE /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>";};
-		FFFFFFFFFFFFFFFFFFFFFFFF /* AppConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstants.swift; sourceTree = "<group>";};
-		121212121212121212121212 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>";};
-		131313131313131313131313 /* ESP32Client.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESP32Client.swift; sourceTree = "<group>";};
-		141414141414141414141414 /* FileImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileImporter.swift; sourceTree = "<group>";};
-		151515151515151515151515 /* FileExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileExporter.swift; sourceTree = "<group>";};
-		161616161616161616161616 /* CameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>";};
-		171717171717171717171717 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>";};
-		AAAAAAAAAAAAAAAAAAAAAAAA /* AEROLINK.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AEROLINK.app; sourceTree = BUILT_PRODUCTS_DIR;};
-
-		181818181818181818181818 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (
-			191919191919191919191919 /* AEROLINKApp.swift in Sources */,
-			202020202020202020202020 /* ContentView.swift in Sources */,
-			212121212121212121212121 /* AppConstants.swift in Sources */,
-			222222222222222222222223 /* Models.swift in Sources */,
-			232323232323232323232323 /* ESP32Client.swift in Sources */,
-			242424242424242424242424 /* FileImporter.swift in Sources */,
-			252525252525252525252525 /* FileExporter.swift in Sources */,
-			262626262626262626262626 /* CameraView.swift in Sources */,
-		); runOnlyForDeploymentPostprocessing = 0;};
-
-		888888888888888888888888 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;};
-		999999999999999999999999 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;};
-
-		191919191919191919191919 /* AEROLINKApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDDDDDDDDDDDDDDDDDDDDDD;};
-		202020202020202020202020 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEEEEEEEEEEEEEEEEEEEEEEE;};
-		212121212121212121212121 /* AppConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFFFFFFFFFFFFFFFFFFFFFFF;};
-		222222222222222222222223 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 121212121212121212121212;};
-		232323232323232323232323 /* ESP32Client.swift in Sources */ = {isa = PBXBuildFile; fileRef = 131313131313131313131313;};
-		242424242424242424242424 /* FileImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 141414141414141414141414;};
-		252525252525252525252525 /* FileExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 151515151515151515151515;};
-		262626262626262626262626 /* CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 161616161616161616161616;};
-
-		333333333333333333333333 /* Project build configuration list */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				343434343434343434343434 /* Debug */,
-				353535353535353535353535 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-
-		666666666666666666666666 /* Target build configuration list */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				363636363636363636363636 /* Debug */,
-				373737373737373737373737 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-
-		343434343434343434343434 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_MODULES = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-
-		353535353535353535353535 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_MODULES = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
-
-		363636363636363636363636 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				INFOPLIST_FILE = AEROLINK/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jinav.aerolink;
-				PRODUCT_NAME = AEROLINK;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-
-		373737373737373737373737 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				INFOPLIST_FILE = AEROLINK/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jinav.aerolink;
-				PRODUCT_NAME = AEROLINK;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
-	};
-	rootObject = 111111111111111111111111 /* Project object */;
+ archiveVersion = 1;
+ classes = {};
+ objectVersion = 56;
+ objects = {
+  111111111111111111111111 = { isa = PBXProject; attributes = { LastUpgradeCheck = 1600; TargetAttributes = { 222222222222222222222222 = { CreatedOnToolsVersion = 16.0; }; }; }; buildConfigurationList = 333333333333333333333333; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; knownRegions = (en, Base); mainGroup = 444444444444444444444444; productRefGroup = CCCCCCCCCCCCCCCCCCCCCCCC; projectDirPath = ""; projectRoot = ""; targets = (222222222222222222222222); };
+  222222222222222222222222 = { isa = PBXNativeTarget; buildConfigurationList = 666666666666666666666666; buildPhases = (181818181818181818181818, 888888888888888888888888, 999999999999999999999999); dependencies = (); name = AEROLINK; productName = AEROLINK; productReference = AAAAAAAAAAAAAAAAAAAAAAAA; productType = "com.apple.product-type.application"; };
+  444444444444444444444444 = { isa = PBXGroup; children = (BBBBBBBBBBBBBBBBBBBBBBBB, CCCCCCCCCCCCCCCCCCCCCCCC); sourceTree = "<group>"; };
+  BBBBBBBBBBBBBBBBBBBBBBBB = { isa = PBXGroup; children = (DDDDDDDDDDDDDDDDDDDDDDDD, EEEEEEEEEEEEEEEEEEEEEEEE, FFFFFFFFFFFFFFFFFFFFFFFF, 121212121212121212121212, 131313131313131313131313, 141414141414141414141414, 151515151515151515151515, 161616161616161616161616, 171717171717171717171717); path = AEROLINK; sourceTree = "<group>"; };
+  CCCCCCCCCCCCCCCCCCCCCCCC = { isa = PBXGroup; children = (AAAAAAAAAAAAAAAAAAAAAAAA); name = Products; sourceTree = "<group>"; };
+  DDDDDDDDDDDDDDDDDDDDDDDD = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AEROLINKApp.swift; sourceTree = "<group>"; };
+  EEEEEEEEEEEEEEEEEEEEEEEE = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+  FFFFFFFFFFFFFFFFFFFFFFFF = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstants.swift; sourceTree = "<group>"; };
+  121212121212121212121212 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+  131313131313131313131313 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESP32Client.swift; sourceTree = "<group>"; };
+  141414141414141414141414 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileImporter.swift; sourceTree = "<group>"; };
+  151515151515151515151515 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileExporter.swift; sourceTree = "<group>"; };
+  161616161616161616161616 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
+  171717171717171717171717 = { isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+  AAAAAAAAAAAAAAAAAAAAAAAA = { isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AEROLINK.app; sourceTree = BUILT_PRODUCTS_DIR; };
+  181818181818181818181818 = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (191919191919191919191919, 202020202020202020202020, 212121212121212121212121, 222222222222222222222223, 232323232323232323232323, 242424242424242424242424, 252525252525252525252525, 262626262626262626262626); runOnlyForDeploymentPostprocessing = 0; };
+  888888888888888888888888 = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+  999999999999999999999999 = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+  191919191919191919191919 = { isa = PBXBuildFile; fileRef = DDDDDDDDDDDDDDDDDDDDDDDD; };
+  202020202020202020202020 = { isa = PBXBuildFile; fileRef = EEEEEEEEEEEEEEEEEEEEEEEE; };
+  212121212121212121212121 = { isa = PBXBuildFile; fileRef = FFFFFFFFFFFFFFFFFFFFFFFF; };
+  222222222222222222222223 = { isa = PBXBuildFile; fileRef = 121212121212121212121212; };
+  232323232323232323232323 = { isa = PBXBuildFile; fileRef = 131313131313131313131313; };
+  242424242424242424242424 = { isa = PBXBuildFile; fileRef = 141414141414141414141414; };
+  252525252525252525252525 = { isa = PBXBuildFile; fileRef = 151515151515151515151515; };
+  262626262626262626262626 = { isa = PBXBuildFile; fileRef = 161616161616161616161616; };
+  333333333333333333333333 = { isa = XCConfigurationList; buildConfigurations = (343434343434343434343434, 353535353535353535353535); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+  666666666666666666666666 = { isa = XCConfigurationList; buildConfigurations = (363636363636363636363636, 373737373737373737373737); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+  343434343434343434343434 = { isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
+  353535353535353535353535 = { isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };
+  363636363636363636363636 = { isa = XCBuildConfiguration; buildSettings = { INFOPLIST_FILE = AEROLINK/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.jinav.aerolink; PRODUCT_NAME = AEROLINK; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
+  373737373737373737373737 = { isa = XCBuildConfiguration; buildSettings = { INFOPLIST_FILE = AEROLINK/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.jinav.aerolink; PRODUCT_NAME = AEROLINK; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };
+ };
+ rootObject = 111111111111111111111111;
 }
