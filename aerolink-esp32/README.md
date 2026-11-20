@@ -51,9 +51,9 @@ The sketch uses UART1 at 460800 baud. If GPIO 17 or GPIO 18 is occupied on your 
 ## Upload firmware
 
 1. Install Arduino IDE and the ESP32 board package.
-2. Open `sender/AEROLINK_Sender.ino` and select the correct ESP32-S3 board.
+2. Open `AEROLINK_Sender/AEROLINK_Sender.ino` and select the correct ESP32-S3 board.
 3. Connect ESP32-A by USB and upload the sender sketch.
-4. Open `receiver/AEROLINK_Receiver.ino`, connect ESP32-B, and upload the receiver sketch.
+4. Open `AEROLINK_Receiver/AEROLINK_Receiver.ino`, connect ESP32-B, and upload the receiver sketch.
 5. Wire TX↔RX, RX↔TX and GND↔GND as shown above.
 6. Power both boards.
 7. Connect Phone A to `AEROLINK-TX` and Phone B to `AEROLINK-RX`.
