@@ -3,6 +3,17 @@ import Foundation
 final class ESP32Client {
     private let baseURL = AppConstants.esp32BaseURL
 
+    func setRole(_ role: AERole) async throws {
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/set-role"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "role", value: role.rawValue)]
+        var request = URLRequest(url: components.url!)
+        request.httpMethod = "GET"
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+    }
+
     func status() async throws -> ESPStatus {
         let (data, response) = try await URLSession.shared.data(from: baseURL.appendingPathComponent("api/status"))
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
@@ -21,13 +32,10 @@ final class ESP32Client {
             try Task.checkCancellation()
 
             let data = try fileHandle.read(upToCount: AppConstants.chunkSize) ?? Data()
-            let encodedID = transferID.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? transferID
-            let encodedName = file.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "aerolink-file.bin"
-
             var components = URLComponents(url: baseURL.appendingPathComponent("api/chunk"), resolvingAgainstBaseURL: false)!
             components.queryItems = [
-                URLQueryItem(name: "id", value: encodedID),
-                URLQueryItem(name: "name", value: encodedName),
+                URLQueryItem(name: "id", value: transferID),
+                URLQueryItem(name: "name", value: file.name),
                 URLQueryItem(name: "seq", value: String(sequence)),
                 URLQueryItem(name: "total", value: String(totalPackets))
             ]
@@ -58,9 +66,9 @@ final class ESP32Client {
 
     private func filename(from contentDisposition: String?) -> String? {
         guard let value = contentDisposition else { return nil }
-        let marker = "filename=""
+        let marker = "filename=\""
         guard let start = value.range(of: marker)?.upperBound,
-              let end = value[start...].firstIndex(of: """) else { return nil }
+              let end = value[start...].firstIndex(of: "\"") else { return nil }
         return String(value[start..<end])
     }
 }
