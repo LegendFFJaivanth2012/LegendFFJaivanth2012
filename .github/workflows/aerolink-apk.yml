@@ -1,0 +1,28 @@
+name: Build AEROLINK APK
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "aerolink-phone/**"
+      - ".github/workflows/aerolink-apk.yml"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: "8.11" }
+      - name: Download MediaPipe hand model
+        run: |
+          mkdir -p aerolink-phone/app/src/main/assets
+          curl -L --fail --retry 3 "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task" -o aerolink-phone/app/src/main/assets/hand_landmarker.task
+      - name: Build debug APK
+        working-directory: aerolink-phone
+        run: gradle assembleDebug
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AEROLINK-debug-apk
+          path: aerolink-phone/app/build/outputs/apk/debug/app-debug.apk
