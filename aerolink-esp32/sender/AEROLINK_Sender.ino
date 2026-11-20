@@ -117,13 +117,12 @@ void handleChunkComplete() {
 }
 
 void sendStatus() {
-  String json = "{\"role\":\"sender\",\"clients\":" +
+  String json = "{\\"role\\":\\"sender\\",\\"clients\\":" +
     String(WiFi.softAPgetStationNum()) +
-    ",\"uart\":" + String(LINK ? "true" : "false") +
-    ",\"packets\":" + String(forwardedPackets) +
-    ",\"total\":" + String(uploadTotal) +
-    ",\"receiving\":false +
-    ",\"complete\":false,\"name\":\"" + uploadName + "\"}";
+    ",\\"uart\\":true" +
+    ",\\"packets\\":" + String(forwardedPackets) +
+    ",\\"total\\":" + String(uploadTotal) +
+    ",\\"receiving\\":false,\\"complete\\":false,\\"name\\":\\"" + uploadName + "\\"}";
   server.send(200, "application/json", json);
 }
 
