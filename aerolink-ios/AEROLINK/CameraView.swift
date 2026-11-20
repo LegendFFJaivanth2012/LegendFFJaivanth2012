@@ -28,7 +28,7 @@ struct CameraView: UIViewRepresentable {
         var enabled = true
 
         private let session = AVCaptureSession()
-        private let queue = DispatchQueue(label: "aerolink.camera.frames")
+        private let queue = DispatchQueue(label: "aerolink.camera")
         private let visionQueue = DispatchQueue(label: "aerolink.vision")
         private let handRequest = VNDetectHumanHandPoseRequest()
         private var pinchFrames = 0
@@ -42,18 +42,17 @@ struct CameraView: UIViewRepresentable {
         }
 
         func setup(view: PreviewView) {
-            guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else {
-                AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
-                    if granted { DispatchQueue.main.async { self?.start(view: view) } }
-                }
-                return
+            AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
+                guard granted else { return }
+                DispatchQueue.main.async { self?.start(view: view) }
             }
-            start(view: view)
         }
 
         private func start(view: PreviewView) {
             queue.async { [weak self] in
                 guard let self else { return }
+                guard !session.isRunning else { return }
+
                 session.beginConfiguration()
                 session.sessionPreset = .medium
 
@@ -63,7 +62,6 @@ struct CameraView: UIViewRepresentable {
                     session.commitConfiguration()
                     return
                 }
-
                 session.addInput(input)
 
                 let output = AVCaptureVideoDataOutput()
@@ -73,9 +71,9 @@ struct CameraView: UIViewRepresentable {
                     session.commitConfiguration()
                     return
                 }
-
                 session.addOutput(output)
                 output.connection(with: .video)?.videoOrientation = .portrait
+
                 session.commitConfiguration()
 
                 DispatchQueue.main.async {
@@ -86,18 +84,14 @@ struct CameraView: UIViewRepresentable {
             }
         }
 
-        func stop() {
-            queue.async { [weak self] in self?.session.stopRunning() }
-        }
-
         func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-            guard enabled, releaseCooldown == 0 else {
-                if releaseCooldown > 0 { releaseCooldown -= 1 }
+            guard enabled else { return }
+            if releaseCooldown > 0 {
+                releaseCooldown -= 1
                 return
             }
 
             let handler = VNImageRequestHandler(cmSampleBuffer: sampleBuffer, orientation: .leftMirrored, options: [:])
-
             do {
                 try handler.perform([handRequest])
                 guard let observation = handRequest.results?.first else {
@@ -114,25 +108,30 @@ struct CameraView: UIViewRepresentable {
                 }
 
                 let palmScale = max(distance(wrist, points[.middleMCP]?.location ?? wrist), 0.05)
-                let pinch = distance(thumb, index) / palmScale < 0.45
+                let pinchRatio = distance(thumb, index) / palmScale
+                let pinch = pinchRatio < 0.45
 
-                let openFingers = [
+                let fingerTips: [CGPoint] = [
                     points[.indexTip]?.location,
                     points[.middleTip]?.location,
                     points[.ringTip]?.location,
                     points[.littleTip]?.location
-                ].compactMap { $0 }.filter {
+                ].compactMap { $0 }
+
+                let openFingers = fingerTips.filter {
                     distance(wrist, $0) / palmScale > 2.0
                 }.count
-
                 let openPalm = openFingers >= 3
-                let handCenter = CGPoint(x: (thumb.x + index.x) / 2, y: (thumb.y + index.y) / 2)
+                let handCenter = CGPoint(
+                    x: (thumb.x + index.x) / 2,
+                    y: (thumb.y + index.y) / 2
+                )
 
                 if mode == .receiver {
                     if openPalm {
                         gestureState = .released
                         releaseCooldown = 18
-                    } else {
+                    } else if gestureState != .released {
                         gestureState = .idle
                     }
                     return
@@ -147,8 +146,8 @@ struct CameraView: UIViewRepresentable {
                     return
                 }
 
-                if pinchOrigin != nil {
-                    if let origin = pinchOrigin, distance(origin, handCenter) > 0.16 {
+                if let origin = pinchOrigin {
+                    if distance(origin, handCenter) > 0.16 {
                         movementFrames += 1
                         gestureState = .moving
                     }
