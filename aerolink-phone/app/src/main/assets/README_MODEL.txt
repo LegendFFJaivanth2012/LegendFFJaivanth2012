@@ -1,0 +1,2 @@
+The GitHub Actions workflow downloads hand_landmarker.task into this directory before assembling the APK.
+The model is bundled so hand tracking can run offline while the phone is connected only to the ESP32 Wi-Fi.
