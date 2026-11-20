@@ -122,7 +122,7 @@ void sendStatus() {
     ",\"uart\":" + String(LINK ? "true" : "false") +
     ",\"packets\":" + String(forwardedPackets) +
     ",\"total\":" + String(uploadTotal) +
-    ",\"receiving\":" + String(server.client().connected() ? "true" : "false") +
+    ",\"receiving\":false +
     ",\"complete\":false,\"name\":\"" + uploadName + "\"}";
   server.send(200, "application/json", json);
 }
