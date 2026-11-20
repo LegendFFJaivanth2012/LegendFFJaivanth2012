@@ -11,6 +11,7 @@ struct ContentView: View {
     @State private var status = "Connect to an AEROLINK ESP32 Wi-Fi network."
     @State private var busy = false
     @State private var receiverReady = false
+    @State private var receiverLoopTask: Task<Void, Never>?
 
     private let client = ESP32Client()
 
@@ -23,14 +24,7 @@ struct ContentView: View {
                 ScrollView {
                     VStack(spacing: 18) {
                         header
-
-                        if role == nil {
-                            rolePicker
-                        } else {
-                            cameraCard
-                            controls
-                            statusCard
-                        }
+                        if role == nil { rolePicker } else { cameraCard; controls; statusCard }
                     }
                     .padding()
                 }
@@ -48,15 +42,18 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showExporter) {
-            if let exportURL {
-                FileExporterView(fileURL: exportURL)
-            }
+            if let exportURL { FileExporterView(fileURL: exportURL) }
         }
         .onChange(of: gestureState) { _, state in
             if state == .released && role == .sender && selectedFile != nil && !busy {
                 Task { await sendFile() }
+            } else if state == .released && role == .receiver && receiverReady {
+                gestureState = .idle
+                status = "Catch gesture detected. Checking ESP32…"
+                Task { await pollReceiver(force: true) }
             }
         }
+        .onDisappear { receiverLoopTask?.cancel() }
     }
 
     private var header: some View {
@@ -80,8 +77,7 @@ struct ContentView: View {
                 role = .sender
                 status = "Sender ready. Choose a file."
             } label: {
-                Label("SEND", systemImage: "arrow.up.circle.fill")
-                    .frame(maxWidth: .infinity)
+                Label("SEND", systemImage: "arrow.up.circle.fill").frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
 
@@ -89,8 +85,7 @@ struct ContentView: View {
                 role = .receiver
                 status = "Receiver ready. Show an open palm."
             } label: {
-                Label("RECEIVE", systemImage: "arrow.down.circle.fill")
-                    .frame(maxWidth: .infinity)
+                Label("RECEIVE", systemImage: "arrow.down.circle.fill").frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
         }
@@ -100,17 +95,18 @@ struct ContentView: View {
 
     private var cameraCard: some View {
         ZStack(alignment: .bottom) {
-            CameraView(gestureState: $gestureState, enabled: !busy)
-                .frame(height: 360)
-                .clipShape(RoundedRectangle(cornerRadius: 24))
+            CameraView(
+                gestureState: $gestureState,
+                mode: role ?? .sender,
+                enabled: !busy && (role == .sender || receiverReady)
+            )
+            .frame(height: 360)
+            .clipShape(RoundedRectangle(cornerRadius: 24))
 
             VStack(alignment: .leading, spacing: 5) {
-                Text(gestureLabel)
-                    .font(.headline)
-                    .foregroundStyle(.white)
+                Text(gestureLabel).font(.headline).foregroundStyle(.white)
                 Text(role == .sender ? "Pinch → move → open hand" : "Open palm to catch")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.85))
+                    .font(.caption).foregroundStyle(.white.opacity(0.85))
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -121,9 +117,7 @@ struct ContentView: View {
     private var controls: some View {
         VStack(spacing: 12) {
             if role == .sender {
-                Button {
-                    showImporter = true
-                } label: {
+                Button { showImporter = true } label: {
                     Label(selectedFile?.name ?? "CHOOSE FILE", systemImage: "doc.badge.plus")
                         .frame(maxWidth: .infinity)
                 }
@@ -132,37 +126,34 @@ struct ContentView: View {
 
                 if let selectedFile {
                     Text("\(selectedFile.name) • \(ByteCountFormatter.string(fromByteCount: Int64(selectedFile.size), countStyle: .file))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.caption).foregroundStyle(.secondary)
                 }
             } else {
                 Button {
                     receiverReady.toggle()
                     status = receiverReady ? "Catch mode armed." : "Catch mode paused."
+                    if receiverReady { armReceiverLoop() } else { receiverLoopTask?.cancel() }
                 } label: {
-                    Label(receiverReady ? "CATCH MODE ON" : "ENABLE CATCH MODE", systemImage: receiverReady ? "hand.raised.fill" : "hand.raised")
-                        .frame(maxWidth: .infinity)
+                    Label(
+                        receiverReady ? "CATCH MODE ON" : "ENABLE CATCH MODE",
+                        systemImage: receiverReady ? "hand.raised.fill" : "hand.raised"
+                    )
+                    .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
             }
 
             if busy {
-                ProgressView(value: progress)
-                    .tint(.white)
-                Text("\(Int(progress * 100))%")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.white)
+                ProgressView(value: progress).tint(.white)
+                Text("\(Int(progress * 100))%").font(.caption.monospacedDigit()).foregroundStyle(.white)
             }
         }
     }
 
     private var statusCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("STATUS")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.secondary)
-            Text(status)
-                .foregroundStyle(.white)
+            Text("STATUS").font(.caption.weight(.bold)).foregroundStyle(.secondary)
+            Text(status).foregroundStyle(.white)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
@@ -180,46 +171,61 @@ struct ContentView: View {
 
     private func sendFile() async {
         guard let selectedFile else { return }
-        busy = true
-        progress = 0
-        status = "Sending \(selectedFile.name)…"
-
-        do {
-            try await client.upload(file: selectedFile, transferID: UUID().uuidString, progress: { value in
-                Task { @MainActor in progress = value }
-            })
-            status = "Sent successfully."
-        } catch {
-            status = "Send failed: \(error.localizedDescription)"
+        await MainActor.run {
+            busy = true
+            progress = 0
+            status = "Sending \(selectedFile.name)…"
         }
 
-        busy = false
-        gestureState = .idle
+        do {
+            try await client.upload(file: selectedFile, transferID: UUID().uuidString) { value in
+                Task { @MainActor in progress = value }
+            }
+            await MainActor.run { status = "Sent successfully." }
+        } catch {
+            await MainActor.run { status = "Send failed: \(error.localizedDescription)" }
+        }
+
+        await MainActor.run {
+            busy = false
+            gestureState = .idle
+        }
     }
 
-    private func pollReceiver() async {
-        guard receiverReady, role == .receiver, !busy else { return }
+    private func pollReceiver(force: Bool = false) async {
+        guard receiverReady, role == .receiver, (!busy || force) else { return }
+
         do {
             let s = try await client.status()
             if s.complete == true {
-                busy = true
-                status = "File received. Downloading…"
+                await MainActor.run {
+                    busy = true
+                    status = "File received. Downloading…"
+                }
+
                 let (data, name) = try await client.downloadReceivedFile()
-                let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+                let safeName = name.isEmpty ? "aerolink-received.bin" : name
+                let url = FileManager.default.temporaryDirectory.appendingPathComponent(safeName)
                 try data.write(to: url)
-                exportURL = url
-                showExporter = true
-                status = "Received \(name)."
-                busy = false
+
+                await MainActor.run {
+                    exportURL = url
+                    showExporter = true
+                    status = "Received \(safeName)."
+                    busy = false
+                }
             }
         } catch {
-            status = "Receiver waiting…"
+            if force {
+                await MainActor.run { status = "Receiver waiting for a complete file…" }
+            }
         }
     }
 
     private func armReceiverLoop() {
-        Task {
-            while receiverReady && role == .receiver {
+        receiverLoopTask?.cancel()
+        receiverLoopTask = Task {
+            while !Task.isCancelled {
                 await pollReceiver()
                 try? await Task.sleep(for: .milliseconds(700))
             }
