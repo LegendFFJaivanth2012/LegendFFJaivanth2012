@@ -137,6 +137,7 @@ void sendStatus() {
 
 void setup() {
   Serial.begin(115200);
+  LINK.setRxBufferSize(4096);
   LINK.begin(UART_BAUD, SERIAL_8N1, UART_RX_PIN, UART_TX_PIN);
 
   if (!LittleFS.begin(true)) {
